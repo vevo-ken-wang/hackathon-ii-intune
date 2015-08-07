@@ -131,11 +131,48 @@ router.route('/feedback')
         var query = new Parse.Query(Feedback);
 
         query.equalTo("userId", accessToken);
-        //query.descending("round");
+        //query.descending("round"); // TODO: update to get latest round if needed
         query.first({
             success: function(result){
 
-                var Feedback = Parse.Object.extend("Feedback");
+                return result;
+
+            },
+            error: function(error){
+                console.log("Error: " + error.code + " " + error.message);
+                res.json({ result: null, error: error})
+            }
+        }).then(function(result){
+
+            // check if user has already posted feedback for this video, if so, then update it
+            var findFeedback = new Parse.Query(Feedback);
+            findFeedback.equalTo("userId", accessToken);
+            findFeedback.equalTo("isrc", req.body.isrc);
+
+            return query.first();
+
+        }).then(function(dbFeedback){
+
+            if(dbFeedback){
+                console.log(dbFeedback);
+                console.log("update existing feedback");
+                dbFeedback.save({
+                    userId: accessToken,
+                    round: 1,
+                    isrc: req.body.isrc,
+                    feedbackType: req.body.type
+                }, {
+                    success: function(feedbackResult){
+                        console.log('Feedback saved: ' + feedbackResult.id);
+
+                        res.json({ result: feedbackResult, error: null});
+                    },
+                    error: function(feedback, error){
+                        console.log('Error: Failed to create member with error code: ' + error.message);
+                        res.json({ result: null, error: error });
+                    }
+                });
+            }else{
                 var feedback = new Feedback();
 
                 feedback.set("userId", accessToken);
@@ -154,10 +191,6 @@ router.route('/feedback')
                         res.json({ result: null, error: error });
                     }
                 });
-            },
-            error: function(error){
-                console.log("Error: " + error.code + " " + error.message);
-                res.json({ result: null, error: error})
             }
         });
     });
