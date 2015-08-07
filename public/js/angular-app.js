@@ -3,6 +3,7 @@ var ngRoute = require('angular-route');
 var api = require('./api.js');
 var R = require('ramda');
 var Parse = require('parse').Parse;
+var request = require('superagent');
 
 var PARSE_APP_ID = "WDZQlWF0wJT4kdFy6udLNd6Hzkf80UnEnoPyv4vY";
 var JS_KEY = "OLWwwMugNngEOQILaa6KI0c0UuquCHJEGhtprev6";
@@ -90,7 +91,7 @@ app.controller('AppCtrl', ['$rootScope', '$scope', '$window', '$timeout', 'AppSt
 
 }]);
 
-app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', function($scope, apiService, appState){
+app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', function($scope, apiService, appState, $timeout){
 
     $scope.seed = function(genre){
 
@@ -140,7 +141,37 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', function($scope, 
     }
 
     $scope.createUser = function(){
-        console.log("submitting user", $scope.user);
+        console.log("submitting user", $scope.user)
+
+        var url = 'https://pure-escarpment-6345.herokuapp.com/api/users'
+        var postData = {
+            firstName: $scope.user.firstName,
+            lastName: $scope.user.lastName,
+            email: $scope.user.firstName+$scope.user.lastName+"@vevo.com",
+            gender: $scope.user.gender,
+            imgUrl: $scope.user.imgUrl,
+            pref: $scope.user.pref,
+            fbId: "",
+        }
+        var promise = new Promise(function(resolve, reject){
+            request
+              .post(url)
+              .send(postData)
+              .end(function(err, res){
+                if(err){
+                  console.log("err: ", err);
+                  reject(err);
+                }else{
+                  console.log("res: ", res.body);
+                  resolve(res.body);
+                  $timeout(function(){
+                      $scope.user = {};
+                  })
+                }
+              });
+        });
+
+
     }
 
 }]);
