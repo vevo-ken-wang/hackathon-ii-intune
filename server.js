@@ -160,71 +160,101 @@ router.route('/feedback')
 
         // first get user's session number
         var Feedback = Parse.Object.extend("Feedback");
-        var query = new Parse.Query(Feedback);
+        var findFeedback = new Parse.Query(Feedback);
+        findFeedback.equalTo("userId", accessToken);
+        findFeedback.equalTo("isrc", req.body.isrc);
 
-        query.equalTo("userId", accessToken);
-        //query.descending("round"); // TODO: update to get latest round if needed
-        query.first({
+        findFeedback.find({
             success: function(result){
+                console.log(result.length);
+                console.log(JSON.stringify(result));
 
+                if(result.length > 0){
+                    // user has already put in feedback fo this video, just update it
+                    console.log("existing feedback", JSON.stringify(result[0]));
+
+                    var updateFeedback = new Parse.Query(Feedback);
+                    updateFeedback.equalTo("id", result[0].objectId);
+                    updateFeedback.first({
+                        success: function(dbFeedback){
+                            if(dbFeedback){
+                                dbFeedback.save({
+                                    userId: accessToken,
+                                    round: 1,
+                                    isrc: req.body.isrc,
+                                    feedbackType: req.body.type
+                                }, {
+                                    success: function(feedbackResult){
+                                        console.log('Feedback saved: ' + feedbackResult.id);
+
+                                        res.json({ result: feedbackResult, error: null});
+                                    },
+                                    error: function(feedback, error){
+                                        console.log('Error: Failed to create member with error code: ' + error.message);
+                                        res.json({ result: null, error: error });
+                                    }
+                                });
+                            }
+                        },
+                        error: function(error){
+                            console.log('Error: Failed to create member with error code: ' + error.message);
+                            res.json({ result: null, error: error });
+                        }
+                    });
+                }else{
+                    // this is new feedback
+                    var feedback = new Feedback();
+
+                    feedback.set("userId", accessToken);
+                    feedback.set("round", 1);
+                    feedback.set("isrc", req.body.isrc);
+                    feedback.set("feedbackType", req.body.type);
+
+                    feedback.save(null, {
+                        success: function(feedbackResult){
+                            console.log('Feedback saved: ' + feedbackResult.id);
+
+                            res.json({ result: feedbackResult, error: null});
+                        },
+                        error: function(feedback, error){
+                            console.log('Error: Failed to create member with error code: ' + error.message);
+                            res.json({ result: null, error: error });
+                        }
+                    });
+                }
                 return result;
-
             },
             error: function(error){
                 console.log("Error: " + error.code + " " + error.message);
                 res.json({ result: null, error: error})
             }
-        }).then(function(result){
-
-            // check if user has already posted feedback for this video, if so, then update it
-            var findFeedback = new Parse.Query(Feedback);
-            findFeedback.equalTo("userId", accessToken);
-            findFeedback.equalTo("isrc", req.body.isrc);
-
-            return query.first();
-
-        }).then(function(dbFeedback){
-
-            if(dbFeedback){
-                console.log(dbFeedback);
-                console.log("update existing feedback");
-                dbFeedback.save({
-                    userId: accessToken,
-                    round: 1,
-                    isrc: req.body.isrc,
-                    feedbackType: req.body.type
-                }, {
-                    success: function(feedbackResult){
-                        console.log('Feedback saved: ' + feedbackResult.id);
-
-                        res.json({ result: feedbackResult, error: null});
-                    },
-                    error: function(feedback, error){
-                        console.log('Error: Failed to create member with error code: ' + error.message);
-                        res.json({ result: null, error: error });
-                    }
-                });
-            }else{
-                var feedback = new Feedback();
-
-                feedback.set("userId", accessToken);
-                feedback.set("round", 1);
-                feedback.set("isrc", req.body.isrc);
-                feedback.set("feedbackType", req.body.type);
-
-                feedback.save(null, {
-                    success: function(feedbackResult){
-                        console.log('Feedback saved: ' + feedbackResult.id);
-
-                        res.json({ result: feedbackResult, error: null});
-                    },
-                    error: function(feedback, error){
-                        console.log('Error: Failed to create member with error code: ' + error.message);
-                        res.json({ result: null, error: error });
-                    }
-                });
-            }
         });
+        //
+        // .then(function(dbFeedback){
+        //
+        //     if(dbFeedback){
+        //         console.log(dbFeedback);
+        //         console.log("update existing feedback");
+        //         dbFeedback.save({
+        //             userId: accessToken,
+        //             round: 1,
+        //             isrc: req.body.isrc,
+        //             feedbackType: req.body.type
+        //         }, {
+        //             success: function(feedbackResult){
+        //                 console.log('Feedback saved: ' + feedbackResult.id);
+        //
+        //                 res.json({ result: feedbackResult, error: null});
+        //             },
+        //             error: function(feedback, error){
+        //                 console.log('Error: Failed to create member with error code: ' + error.message);
+        //                 res.json({ result: null, error: error });
+        //             }
+        //         });
+        //     }else{
+        //
+        //     }
+        // });
     });
 
 // MATCHES

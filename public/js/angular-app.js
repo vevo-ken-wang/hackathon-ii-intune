@@ -4,6 +4,7 @@ var api = require('./api.js');
 var R = require('ramda');
 var Parse = require('parse').Parse;
 var request = require('superagent');
+var _ = require('lodash');
 
 var PARSE_APP_ID = "WDZQlWF0wJT4kdFy6udLNd6Hzkf80UnEnoPyv4vY";
 var JS_KEY = "OLWwwMugNngEOQILaa6KI0c0UuquCHJEGhtprev6";
@@ -170,8 +171,63 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', funct
                 }
               });
         });
+    }
 
+    $scope.seedUserLikes = function(){
+        console.log("here");
+        // get a list of videos
+        // look thru and create random feedback for each video for the user
+        var url = 'https://pure-escarpment-6345.herokuapp.com/api/videos?access_token=' + $scope.userId;
+        var promise = new Promise(function(resolve, reject){
+            request
+              .get(url)
+              .end(function(err, res){
+                if(err){
+                  console.log("err: ", err);
+                  reject(err);
+                }else{
+                  console.log("res: ", res.body);
 
+                  var promiseReqs = [];
+                  _.forEach(res.body.result, function(vid){
+                      var url = 'https://pure-escarpment-6345.herokuapp.com/api/feedback';
+                      var postData = {
+                          access_token: $scope.userId,
+                          isrc: vid.isrc,
+                          type: (Math.random() > .5) ? "like" : "dislike"
+                      }
+
+                      var p = new Promise(function(res, rej){
+                          request
+                            .post(url)
+                            .send(postData)
+                            .end(function(error, result){
+                                if(error){
+                                    rej(error);
+                                }else{
+                                    res(result);
+                                }
+                            });
+                      });
+
+                      promiseReqs.push(p);
+                  });
+                  console.log("promises", promiseReqs);
+                  Promise.all(promiseReqs)
+                      .then(function (res) {
+                          $timeout(function(){
+                             $scope.userId = ""; 
+                          });
+                      });
+
+                  resolve(res.body);
+
+                  $timeout(function(){
+                      $scope.userId = '';
+                  })
+                }
+              });
+        });
     }
 
 }]);
