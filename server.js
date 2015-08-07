@@ -336,7 +336,6 @@ router.route('/matches')
 
                             memberQuery.find({
                                 success: function(users){
-
                                     _.forEach(users, function(u){
                                         u._serverData.id = u.id;
                                     })
@@ -354,24 +353,27 @@ router.route('/matches')
                                             //console.log("currentUser", currentUser);
                                             currentUser = currentUser._serverData;
 
-                                            //console.log(usersHash);
+                                            console.log(usersHash);
 
                                             var maxMatch = 0;
                                             var maxMatchUserId = '';
                                             _.forEach(userIds, function(id){
                                                 var numMatches = matchesGroupedByUserId[id].length;
                                                 if(numMatches > 0){
-                                                    var matchUser = usersHash[id][0];
-                                                    // check if the user meets the sexual pref and vice versa, both ways sexual pref have to match in order to work
-                                                    if(currentUser.pref.indexOf(matchUser.gender) > -1
-                                                        && matchUser.pref.indexOf(currentUser.gender) > -1
-                                                        && numMatches > maxMatch){
+                                                    console.log("crash here: ", usersHash[id]);
+                                                    if(usersHash[id] && usersHash[id][0]){
+                                                        var matchUser = usersHash[id][0];
+                                                        // check if the user meets the sexual pref and vice versa, both ways sexual pref have to match in order to work
+                                                        if(currentUser.pref.indexOf(matchUser.gender) > -1
+                                                            && matchUser.pref.indexOf(currentUser.gender) > -1
+                                                            && numMatches > maxMatch){
 
-                                                        console.log("[FOUND MATCH FOR]: current user is [" + currentUser.gender + "-> " + currentUser.pref + "] | [" + matchUser.gender + "->" + matchUser.pref + "]");
+                                                            console.log("[FOUND MATCH FOR]: current user is [" + currentUser.gender + "-> " + currentUser.pref + "] | [" + matchUser.gender + "->" + matchUser.pref + "]");
 
 
-                                                        maxMatch = numMatches;
-                                                        maxMatchUserId = id;
+                                                            maxMatch = numMatches;
+                                                            maxMatchUserId = id;
+                                                        }
                                                     }
                                                 }
                                             });

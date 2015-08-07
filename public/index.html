@@ -47,16 +47,29 @@
             <form ng-submit="seedUserLikes()">
                 <div class="ui input"><input class="" placeholder="User id" ng-model="userId"/></div>
                 <button class="ui button">Seed user likes</button>
-                
+
             </form>
-            <div>
-                <ul>
-                    <li ng-repeat="user in users">
-                        <h3>{{user.firstName}} {{user.lastName}}</h3>
-                        <a ng-href="https://pure-escarpment-6345.herokuapp.com/api/matches?access_token={{user.objectId}}" target="_blank">See Match</a>
+
+            <br/>
+            <br/>
+
+            <div class="ui link cards">
+                <div class="ui card" ng-repeat="user in users">
+                    <div class="image"><img ng-src="{{user.imgUrl}}"/></div>
+                    <div class="content">
+                        <div class="header">{{user.firstName}} {{user.lastName}}</div>
+                        <div class="meta">
+                            <span ng-if="user.pref == 'M'">Looking for Men</span>
+                            <span ng-if="user.pref == 'F'">Looking for Women</span>
+                            <span ng-if="user.pref == 'MF'">Looking for Men and Women ;)</span>
+                        </div>
+                    </div>
+
+                    <div class="extra content">
+                        <a class="ui button" ng-href="api/matches?access_token={{user.objectId}}" target="_blank">See match</a>
                         <button class="ui button" ng-click="seedUserLikes(user.objectId)">Seed likes</button>
-                    </li>
-                </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

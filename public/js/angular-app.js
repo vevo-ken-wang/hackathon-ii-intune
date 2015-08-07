@@ -177,7 +177,7 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', funct
         if(!userId){
             userId = $scope.userId;
         }
-        console.log("here");
+        console.log("here: ", userId);
         // get a list of videos
         // look thru and create random feedback for each video for the user
         var url = 'https://pure-escarpment-6345.herokuapp.com/api/videos?access_token=' + userId;
@@ -195,7 +195,7 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', funct
                   _.forEach(res.body.result, function(vid){
                       var url = 'https://pure-escarpment-6345.herokuapp.com/api/feedback';
                       var postData = {
-                          access_token: $scope.userId,
+                          access_token: userId,
                           isrc: vid.isrc,
                           type: (Math.random() > .5) ? "like" : "dislike"
                       }
