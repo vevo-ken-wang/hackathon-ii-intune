@@ -135,18 +135,19 @@ router.route('/feedback')
         query.first({
             success: function(result){
 
+                var Feedback = Parse.Object.extend("Feedback");
                 var feedback = new Feedback();
 
                 feedback.set("userId", accessToken);
                 feedback.set("round", 1);
                 feedback.set("isrc", req.body.isrc);
-                feedback.set("type", req.body.type);
+                feedback.set("feedbackType", req.body.type);
 
                 feedback.save(null, {
-                    success: function(feedback){
-                        console.log('Feedback saved: ' + feedback.id);
+                    success: function(feedbackResult){
+                        console.log('Feedback saved: ' + feedbackResult.id);
 
-                        res.json({ result: feedback, error: null});
+                        res.json({ result: feedbackResult, error: null});
                     },
                     error: function(feedback, error){
                         console.log('Error: Failed to create member with error code: ' + error.message);
@@ -170,14 +171,14 @@ router.route('/matches')
 
         // get the user's list of feedback
         var Feedback = Parse.Object.extend("Feedback");
-        var userFeedbackListQuery = new Parse.Query(Feedback);
+        var query = new Parse.Query(Feedback);
 
-        //userFeedbackListQuery.equalTo("userId", accessToken);
-        userFeedbackListQuery.equalTo("type", "like");
-        userFeedbackListQuery.find({
+        query.equalTo("userId", accessToken);
+        query.equalTo("feedbackType", "like");
+        query.find({
             success: function(results){
-
-                console.log("user's feedback list", results);
+                results = _.pluck(results, '_serverData');
+                console.log(results);
 
                 if(results.length > 0){
 
@@ -187,7 +188,6 @@ router.route('/matches')
                     userFeedbackList = _.sortBy(results, function(feedback){
                         return feedback.round;
                     }).reverse();
-                    console.log("\n\nuser's feedbacklist reordered", userFeedbackList);
 
                     var userRounds = userFeedbackList[0].round;
                     var likedIsrcs = _.pluck(userFeedbackList, 'isrc');
@@ -195,11 +195,14 @@ router.route('/matches')
 
                     var matchedFeedbackQuery = new Parse.Query(Feedback);
                     matchedFeedbackQuery.notEqualTo("userId", accessToken);
-                    matchedFeedbackQuery.equalTo("type", "like");
+                    matchedFeedbackQuery.equalTo("feedbackType", "like");
                     matchedFeedbackQuery.containedIn("isrc", likedIsrcs);
 
                     matchedFeedbackQuery.find({
                         success: function(matches){
+
+                            // need this pluck cuz of weird bug with parse sdk, returning extraneous data
+                            matches = _.pluck(matches, '_serverData');
 
                             // group the results by user to find the user that
                             // is the best match
@@ -225,7 +228,10 @@ router.route('/matches')
                             userQuery.equalTo("objectId", maxMatchUserId);
                             userQuery.first({
                                 success: function(maxMatchUser){
-                                    //maxMatchUser.matchPercent = maxMatch / userRounds * 20 * 100;
+                                    if(maxMatchUser){
+                                        console.log("maxMatch: " + maxMatch + "| userRounds: " + userRounds);
+                                        maxMatchUser.set('matchPercent', maxMatch / (userRounds * 20) * 100);
+                                    }
                                     res.json({ result: maxMatchUser, error: null });
                                 },
                                 error: function(error){
