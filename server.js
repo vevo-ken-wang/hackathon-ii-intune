@@ -34,6 +34,7 @@ router.route('/users')
         memberQuery.first({
             success: function(user){
                 if(user){
+                    user.set("access_token", user.id);
                     res.json({ result: user, error: null});
                 }else{
                     var member = new Member();
@@ -81,6 +82,7 @@ router.route('/users')
         memberQuery.first({
             success: function(user){
                 if(user){
+                    user.set("access_token", user.id);
                     res.json({ result: user, error: null});
                 }else{
                     res.json({ result: null, error: null});
