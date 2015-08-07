@@ -99,6 +99,27 @@ router.route('/users')
         });
     });
 
+router.route('/users/all')
+    .get(function(req, res){
+        var Member = Parse.Object.extend("Member");
+
+        // check if current user already exists, if not then create it
+        var memberQuery = new Parse.Query(Member);
+
+        memberQuery.find({
+            success: function(users){
+                if(users){
+                    res.json({ result: users, error: null});
+                }else{
+                    res.json({ result: null, error: null});
+                }
+            },
+            error: function(error){
+
+            }
+        });
+    });
+
 // VIDEOS
 router.route('/videos')
     // GET VIDEOS (session 1)

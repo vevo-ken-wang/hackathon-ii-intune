@@ -48,6 +48,14 @@
                 <div class="ui input"><input class="" placeholder="User id" ng-model="userId"/></div>
                 <button class="ui button">Seed user likes</button>
             </form>
+            <div>
+                <ul>
+                    <li ng-repeat="user in users">
+                        <h3>{{user.firstName}} {{user.lastName}}</h3>
+                        <button class="ui button" ng-click="seedUserLikes(user.objectId)">Seed likes</button>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 

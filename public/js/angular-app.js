@@ -173,11 +173,14 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', funct
         });
     }
 
-    $scope.seedUserLikes = function(){
+    $scope.seedUserLikes = function(userId){
+        if(!userId){
+            userId = $scope.userId;
+        }
         console.log("here");
         // get a list of videos
         // look thru and create random feedback for each video for the user
-        var url = 'https://pure-escarpment-6345.herokuapp.com/api/videos?access_token=' + $scope.userId;
+        var url = 'https://pure-escarpment-6345.herokuapp.com/api/videos?access_token=' + userId;
         var promise = new Promise(function(resolve, reject){
             request
               .get(url)
@@ -216,7 +219,7 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', funct
                   Promise.all(promiseReqs)
                       .then(function (res) {
                           $timeout(function(){
-                             $scope.userId = ""; 
+                             $scope.userId = "";
                           });
                       });
 
@@ -230,6 +233,24 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', funct
         });
     }
 
+    // get all users and build a list
+    var url = 'https://pure-escarpment-6345.herokuapp.com/api/users/all'
+    var promise = new Promise(function(resolve, reject){
+        request
+          .get(url)
+          .end(function(err, res){
+            if(err){
+              console.log("err: ", err);
+              reject(err);
+            }else{
+              console.log("res: ", res.body);
+              resolve(res.body);
+              $timeout(function(){
+                  $scope.users = res.body.result;
+              })
+            }
+          });
+    });
 }]);
 
 app.controller('SearchCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', '$location', function($scope, apiService, appState, $timeout, $location){
