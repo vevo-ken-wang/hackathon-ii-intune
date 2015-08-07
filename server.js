@@ -270,32 +270,73 @@ router.route('/matches')
                             console.log("matches", matchesGroupedByUserId);
 
                             var userIds = Object.keys(matchesGroupedByUserId);
-                            var maxMatch = 0;
-                            var maxMatchUserId = '';
-                            _.map(userIds, function(id){
-                                var numMatches = matchesGroupedByUserId[id].length;
-                                if(numMatches > maxMatch){
-                                    maxMatch = numMatches;
-                                    maxMatchUserId = id;
-                                }
-                            });
 
+                            // get user objects for these userIds
                             var Member = Parse.Object.extend("Member");
-                            var userQuery = new Parse.Query(Member);
-                            userQuery.equalTo("objectId", maxMatchUserId);
-                            userQuery.first({
-                                success: function(maxMatchUser){
-                                    if(maxMatchUser){
-                                        console.log("maxMatch: " + maxMatch + "| userRounds: " + userRounds);
-                                        maxMatchUser.set('matchPercent', maxMatch / (userRounds * 20) * 100);
-                                    }
-                                    res.json({ result: maxMatchUser, error: null });
+                            var memberQuery = new Parse.Query(Member);
+                            memberQuery.containedIn("objectId", userIds);
+
+                            memberQuery.find({
+                                success: function(users){
+
+                                    _.forEach(users, function(u){
+                                        u._serverData.id = u.id;
+                                    })
+
+                                    users = _.pluck(users, "_serverData");
+                                    usersHash = _.groupBy(users, function(u){
+                                        return u.id;
+                                    })
+
+                                    // get current user
+                                    var currentUserQuery = new Parse.Query(Member);
+                                    currentUserQuery.equalTo("objectId", accessToken);
+                                    currentUserQuery.first({
+                                        success: function(currentUser){
+                                            console.log("currentUser", currentUser);
+                                            currentUser = currentUser._serverData;
+
+                                            console.log(usersHash);
+
+                                            var maxMatch = 0;
+                                            var maxMatchUserId = '';
+                                            _.map(userIds, function(id){
+                                                var numMatches = matchesGroupedByUserId[id].length;
+                                                var matchUser = usersHash[id][0];
+                                                // check if the user meets the sexual pref and vice versa, both ways sexual pref have to match in order to work
+                                                if(currentUser.pref.indexOf(matchUser.gender) > -1
+                                                    && matchUser.pref.indexOf(currentUser.gender) > -1
+                                                    && numMatches > maxMatch){
+                                                    maxMatch = numMatches;
+                                                    maxMatchUserId = id;
+                                                }
+                                            });
+
+                                            var Member = Parse.Object.extend("Member");
+                                            var userQuery = new Parse.Query(Member);
+                                            userQuery.equalTo("objectId", maxMatchUserId);
+                                            userQuery.first({
+                                                success: function(maxMatchUser){
+                                                    if(maxMatchUser){
+                                                        console.log("maxMatch: " + maxMatch + "| userRounds: " + userRounds);
+                                                        maxMatchUser.set('matchPercent', maxMatch / (userRounds * 20) * 100);
+                                                    }
+                                                    res.json({ result: maxMatchUser, error: null });
+                                                },
+                                                error: function(error){
+                                                    console.log("Error: Finding matched max user", error);
+                                                    res.json({ result: null, error: error})
+                                                }
+                                            });
+
+                                        }
+                                    });
+
                                 },
                                 error: function(error){
-                                    console.log("Error: Finding matched max user", error);
-                                    res.json({ result: null, error: error})
+
                                 }
-                            });
+                            })
 
                         },
                         error: function(error){
