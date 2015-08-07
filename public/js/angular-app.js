@@ -181,6 +181,7 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', funct
         // get a list of videos
         // look thru and create random feedback for each video for the user
         var url = 'https://pure-escarpment-6345.herokuapp.com/api/videos?access_token=' + userId;
+        
         var promise = new Promise(function(resolve, reject){
             request
               .get(url)
