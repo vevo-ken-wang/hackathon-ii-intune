@@ -89,7 +89,8 @@ router.route('/videos')
                 if(result){
                     latestRound = result.round;
                 }
-                newRound = latestRound+1;
+                //newRound = latestRound+1;
+                newRound = 1; // DEBUG for now and always be round 1;
 
                 console.log(newRound);
 
@@ -97,7 +98,7 @@ router.route('/videos')
                 var Video = Parse.Object.extend("Video");
                 var vidQuery = new Parse.Query(Video);
                 vidQuery.ascending("objectId");
-                vidQuery.skip((newRound-1) * numPerRound);
+                vidQuery.skip(((newRound-1) * numPerRound)%120); // loop around if we just keep going
                 vidQuery.limit(numPerRound);
 
                 vidQuery.find({
@@ -130,14 +131,14 @@ router.route('/feedback')
         var query = new Parse.Query(Feedback);
 
         query.equalTo("userId", accessToken);
-        query.descending("round");
+        //query.descending("round");
         query.first({
-            success: function(round){
+            success: function(result){
 
                 var feedback = new Feedback();
 
                 feedback.set("userId", accessToken);
-                feedback.set("round", round);
+                feedback.set("round", 1);
                 feedback.set("isrc", req.body.isrc);
                 feedback.set("type", req.body.type);
 
@@ -171,22 +172,26 @@ router.route('/matches')
         var Feedback = Parse.Object.extend("Feedback");
         var userFeedbackListQuery = new Parse.Query(Feedback);
 
-        userFeedbackListQuery.equalTo("userId", accessToken);
+        //userFeedbackListQuery.equalTo("userId", accessToken);
         userFeedbackListQuery.equalTo("type", "like");
         userFeedbackListQuery.find({
-            success: function(userFeedbackList){
+            success: function(results){
 
-                if(userFeedbackList.length > 0){
+                console.log("user's feedback list", results);
+
+                if(results.length > 0){
 
                     // returns a list of user's liked feedback
                     // pull out the isrcs and then build query to find other
                     // users who also liked these isrcs
-                    userFeedbackList = _.sortBy(userFeedbackList, function(feedback){
+                    userFeedbackList = _.sortBy(results, function(feedback){
                         return feedback.round;
                     }).reverse();
+                    console.log("\n\nuser's feedbacklist reordered", userFeedbackList);
 
                     var userRounds = userFeedbackList[0].round;
                     var likedIsrcs = _.pluck(userFeedbackList, 'isrc');
+                    console.log("user's liked isrcs", likedIsrcs);
 
                     var matchedFeedbackQuery = new Parse.Query(Feedback);
                     matchedFeedbackQuery.notEqualTo("userId", accessToken);
@@ -201,6 +206,8 @@ router.route('/matches')
                             var matchesGroupedByUserId = _.groupBy(matches, function(m){
                                 return m.userId;
                             });
+
+                            console.log("matches", matchesGroupedByUserId);
 
                             var userIds = Object.keys(matchesGroupedByUserId);
                             var maxMatch = 0;
@@ -218,7 +225,7 @@ router.route('/matches')
                             userQuery.equalTo("objectId", maxMatchUserId);
                             userQuery.first({
                                 success: function(maxMatchUser){
-                                    maxMatchUser.set("matchPercent", maxMatch / userRounds * 20);
+                                    //maxMatchUser.matchPercent = maxMatch / userRounds * 20 * 100;
                                     res.json({ result: maxMatchUser, error: null });
                                 },
                                 error: function(error){
