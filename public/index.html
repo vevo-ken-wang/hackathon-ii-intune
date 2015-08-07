@@ -18,6 +18,16 @@
         <button ng-click="seed('electronicdance')">Seed electronic</button>
         <button ng-click="seed('rbsoul')">Seed r&b</button>
         <button ng-click="seed('rock')">Seed rock</button>
+
+        <form ng-submit="createUser()">
+            <input placeholder="First name" ng-model="user.firstName"/>
+            <input placeholder="Last name" ng-model="user.lastName"/>
+            <input placeholder="Email" ng-model="user.email"/>
+            <input placeholder="Gender" ng-model="user.gender"/>
+            <input placeholder="Image Url" ng-model="user.imgUrl"/>
+            <input placeholder="Looking For: (M|F|MF)" ng-model="user.pref"/>
+            <button>Create user</button>
+        </form>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>

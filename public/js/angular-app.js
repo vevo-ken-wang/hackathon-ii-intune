@@ -140,9 +140,7 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', function($scope, 
     }
 
     $scope.createUser = function(){
-        var data = {
-            
-        }
+        console.log("submitting user", $scope.user);
     }
 
 }]);
