@@ -52,6 +52,7 @@
                 <ul>
                     <li ng-repeat="user in users">
                         <h3>{{user.firstName}} {{user.lastName}}</h3>
+                        <a ng-href="https://pure-escarpment-6345.herokuapp.com/api/matches?access_token={{user.objectId}}" target="_blank">See Match</a>
                         <button class="ui button" ng-click="seedUserLikes(user.objectId)">Seed likes</button>
                     </li>
                 </ul>
