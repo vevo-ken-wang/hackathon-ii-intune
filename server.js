@@ -273,7 +273,6 @@ router.route('/matches')
         query.find({
             success: function(results){
                 results = _.pluck(results, '_serverData');
-                console.log(results);
 
                 if(results.length > 0){
 
@@ -305,7 +304,7 @@ router.route('/matches')
                                 return m.userId;
                             });
 
-                            console.log("matches", matchesGroupedByUserId);
+                            //console.log("matches", matchesGroupedByUserId);
 
                             var userIds = Object.keys(matchesGroupedByUserId);
 
@@ -331,22 +330,28 @@ router.route('/matches')
                                     currentUserQuery.equalTo("objectId", accessToken);
                                     currentUserQuery.first({
                                         success: function(currentUser){
-                                            console.log("currentUser", currentUser);
+                                            //console.log("currentUser", currentUser);
                                             currentUser = currentUser._serverData;
 
-                                            console.log(usersHash);
+                                            //console.log(usersHash);
 
                                             var maxMatch = 0;
                                             var maxMatchUserId = '';
-                                            _.map(userIds, function(id){
+                                            _.forEach(userIds, function(id){
                                                 var numMatches = matchesGroupedByUserId[id].length;
-                                                var matchUser = usersHash[id][0];
-                                                // check if the user meets the sexual pref and vice versa, both ways sexual pref have to match in order to work
-                                                if(currentUser.pref.indexOf(matchUser.gender) > -1
-                                                    && matchUser.pref.indexOf(currentUser.gender) > -1
-                                                    && numMatches > maxMatch){
-                                                    maxMatch = numMatches;
-                                                    maxMatchUserId = id;
+                                                if(numMatches > 0){
+                                                    var matchUser = usersHash[id][0];
+                                                    // check if the user meets the sexual pref and vice versa, both ways sexual pref have to match in order to work
+                                                    if(currentUser.pref.indexOf(matchUser.gender) > -1
+                                                        && matchUser.pref.indexOf(currentUser.gender) > -1
+                                                        && numMatches > maxMatch){
+
+                                                        console.log("[FOUND MATCH FOR]: current user is [" + currentUser.gender + "-> " + currentUser.pref + "] | [" + matchUser.gender + "->" + matchUser.pref + "]");
+
+
+                                                        maxMatch = numMatches;
+                                                        maxMatchUserId = id;
+                                                    }
                                                 }
                                             });
 
