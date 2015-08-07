@@ -1117,7 +1117,36 @@ module.exports = (function(){
       });
 
       return promise;
-    }
+  },
+
+  getVevoVideos: function(token, genre){
+
+    var urlFormat = 'https://apiv2.vevo.com/videos?page=1&size=20&genre={{genre}}&sort=MostViewedLastWeek&token={{token}}';
+    var interpolateVals = {
+      'token': token,
+      'genre': genre
+    };
+
+    // interpolate url with our variables
+    var url = S(urlFormat).template(interpolateVals).s;
+
+
+    var promise = new Promise(function(resolve, reject){
+        request
+          .get(url)
+          .end(function(err, res){
+            if(err){
+              console.log("err: ", err);
+              reject(err);
+            }else{
+              console.log("res: ", res.body);
+              resolve(res.body);
+            }
+          });
+    });
+
+    return promise;
+  }
 
     //===============================
 

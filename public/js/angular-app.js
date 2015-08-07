@@ -2,6 +2,11 @@ var angular = require('angular');
 var ngRoute = require('angular-route');
 var api = require('./api.js');
 var R = require('ramda');
+var Parse = require('parse').Parse;
+
+var PARSE_APP_ID = "WDZQlWF0wJT4kdFy6udLNd6Hzkf80UnEnoPyv4vY";
+var JS_KEY = "OLWwwMugNngEOQILaa6KI0c0UuquCHJEGhtprev6";
+Parse.initialize(PARSE_APP_ID, JS_KEY);
 
 var app = angular.module('app', ['ngRoute']);
 window.api = api; //NOTE: FOR DEBUGGING
@@ -82,6 +87,57 @@ app.controller('AppCtrl', ['$rootScope', '$scope', '$window', '$timeout', 'AppSt
       appState.userId = leanBackUserId;
     });
   });
+
+}]);
+
+app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', function($scope, apiService, appState){
+
+    $scope.seed = function(genre){
+
+        apiService.getVevoVideos(appState.vevoToken, genre)
+            .then(function(res){
+                console.log("vevo videos", res);
+
+                var streamHash = [];
+                for(var i = 0; i < res.videos.length; i++){
+                    // get streams for each video
+                    var vid = res.videos[i];
+                    streamHash.push(apiService.getStreams(vid.isrc, appState.vevoToken));
+                }
+
+                Promise.all(streamHash)
+                    .then(function(streamRes){
+
+                        // get streams for each video and append it
+                        for(var i = 0; i < res.videos.length; i++){
+                            var video = res.videos[i];
+                            video.stream = streamRes[i][0].url;
+
+                            var Video = Parse.Object.extend("Video");
+                            var dbVideo = new Video();
+
+                            dbVideo.set("isrc", video.isrc)
+                            dbVideo.set("artist", video.artists[0].name);
+                            dbVideo.set("title", video.title);
+                            dbVideo.set("stream", video.stream);
+                            dbVideo.set("thumbnailUrl", video.thumbnailUrl);
+
+                            dbVideo.save(null, {
+                                success: function(vid){
+                                    //console.log('Member created: ' + member.id);
+                                },
+                                error: function(vid, error){
+                                    console.log('Error: Failed to create member with error code: ' + error.message);
+                                }
+                            });
+                        }
+
+                        console.log("FINAL", res.videos);
+
+                    });
+            });
+
+    }
 
 }]);
 

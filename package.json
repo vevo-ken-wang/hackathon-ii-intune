@@ -14,6 +14,7 @@
     "gulp": "^3.9.0",
     "gulp-concat": "^2.6.0",
     "gulp-connect": "^2.2.0",
+    "lodash": "^3.10.1",
     "morgan": "^1.6.1",
     "node-parse-api": "^0.3.7",
     "parse": "^1.5.0",
