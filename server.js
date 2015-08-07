@@ -107,6 +107,7 @@ router.route('/videos')
         // check which session the user is on, automatically paginate to the next
         // set of videos
         var accessToken = req.query.access_token;
+        var size = req.query.size ? req.query.size : 20;
         console.log("access_token:", accessToken);
 
         // look up user by access_token (which is just userId)
@@ -125,7 +126,7 @@ router.route('/videos')
 
                 console.log(newRound);
 
-                var numPerRound = 20;
+                var numPerRound = size;
                 var Video = Parse.Object.extend("Video");
                 var vidQuery = new Parse.Query(Video);
                 vidQuery.ascending("objectId");
