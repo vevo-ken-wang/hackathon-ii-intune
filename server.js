@@ -26,26 +26,42 @@ router.route('/users')
     .post(function(req, res){
 
         var Member = Parse.Object.extend("Member");
-        var member = new Member();
-        console.log(req.body);
 
-        member.set("firstName", req.body.firstName);
-        member.set("lastName", req.body.lastName);
-        member.set("email", req.body.email);
-        member.set("gender", req.body.gender);
-        member.set("pref", req.body.pref);
-        member.set("imgUrl", req.body.imgUrl);
+        // check if current user already exists, if not then create it
+        var memberQuery = new Parse.Query(Member);
+        memberQuery.equalTo("fbId", req.body.fbId);
 
-        member.save(null, {
-            success: function(member){
-                console.log('Member created: ' + member.id);
-                // set a simple access_token to be userId
-                member.set("access_token", member.id);
-                res.json({ result: member, error: null});
+        memberQuery.first({
+            success: function(user){
+                if(user){
+                    res.json({ result: user, error: null});
+                }else{
+                    var member = new Member();
+
+                    member.set("firstName", req.body.firstName);
+                    member.set("lastName", req.body.lastName);
+                    member.set("email", req.body.email);
+                    member.set("gender", req.body.gender);
+                    member.set("pref", req.body.pref);
+                    member.set("imgUrl", req.body.imgUrl);
+                    member.set("fbId", req.body.fbId);
+
+                    member.save(null, {
+                        success: function(member){
+                            console.log('Member created: ' + member.id);
+                            // set a simple access_token to be userId
+                            member.set("access_token", member.id);
+                            res.json({ result: member, error: null});
+                        },
+                        error: function(member, error){
+                            console.log('Error: Failed to create member with error code: ' + error.message);
+                            res.json({ result: null, error: error });
+                        }
+                    });
+                }
             },
-            error: function(member, error){
-                console.log('Error: Failed to create member with error code: ' + error.message);
-                res.json({ result: null, error: error });
+            error: function(error){
+
             }
         });
     });
@@ -103,12 +119,135 @@ router.route('/videos')
     });
 
 // LIKE/DISLIKE
-router.route('/feedback');
-    // POST FEEDBACK { 'isrc', 'type': 'like'|'dislike' }
+router.route('/feedback')
+    // POST FEEDBACK { 'isrc', 'type': 'like'|'dislike', 'access_token' }
+    .post(function(req, res){
+
+        var accessToken = req.body.access_token;
+
+        // first get user's session number
+        var Feedback = Parse.Object.extend("Feedback");
+        var query = new Parse.Query(Feedback);
+
+        query.equalTo("userId", accessToken);
+        query.descending("round");
+        query.first({
+            success: function(round){
+
+                var feedback = new Feedback();
+
+                feedback.set("userId", accessToken);
+                feedback.set("round", round);
+                feedback.set("isrc", req.body.isrc);
+                feedback.set("type", req.body.type);
+
+                feedback.save(null, {
+                    success: function(feedback){
+                        console.log('Feedback saved: ' + feedback.id);
+
+                        res.json({ result: feedback, error: null});
+                    },
+                    error: function(feedback, error){
+                        console.log('Error: Failed to create member with error code: ' + error.message);
+                        res.json({ result: null, error: error });
+                    }
+                });
+            },
+            error: function(error){
+                console.log("Error: " + error.code + " " + error.message);
+                res.json({ result: null, error: error})
+            }
+        });
+    });
 
 // MATCHES
-router.route('/matches');
+router.route('/matches')
     // GET
+    .get(function(req, res){
+
+        var accessToken = req.query.access_token;
+
+        // get the user's list of feedback
+        var Feedback = Parse.Object.extend("Feedback");
+        var userFeedbackListQuery = new Parse.Query(Feedback);
+
+        userFeedbackListQuery.equalTo("userId", accessToken);
+        userFeedbackListQuery.equalTo("type", "like");
+        userFeedbackListQuery.find({
+            success: function(userFeedbackList){
+
+                if(userFeedbackList.length > 0){
+
+                    // returns a list of user's liked feedback
+                    // pull out the isrcs and then build query to find other
+                    // users who also liked these isrcs
+                    userFeedbackList = _.sortBy(userFeedbackList, function(feedback){
+                        return feedback.round;
+                    }).reverse();
+
+                    var userRounds = userFeedbackList[0].round;
+                    var likedIsrcs = _.pluck(userFeedbackList, 'isrc');
+
+                    var matchedFeedbackQuery = new Parse.Query(Feedback);
+                    matchedFeedbackQuery.notEqualTo("userId", accessToken);
+                    matchedFeedbackQuery.equalTo("type", "like");
+                    matchedFeedbackQuery.containedIn("isrc", likedIsrcs);
+
+                    matchedFeedbackQuery.find({
+                        success: function(matches){
+
+                            // group the results by user to find the user that
+                            // is the best match
+                            var matchesGroupedByUserId = _.groupBy(matches, function(m){
+                                return m.userId;
+                            });
+
+                            var userIds = Object.keys(matchesGroupedByUserId);
+                            var maxMatch = 0;
+                            var maxMatchUserId = '';
+                            _.map(userIds, function(id){
+                                var numMatches = matchesGroupedByUserId[id].length;
+                                if(numMatches > maxMatch){
+                                    maxMatch = numMatches;
+                                    maxMatchUserId = id;
+                                }
+                            });
+
+                            var Member = Parse.Object.extend("Member");
+                            var userQuery = new Parse.Query(Member);
+                            userQuery.equalTo("objectId", maxMatchUserId);
+                            userQuery.first({
+                                success: function(maxMatchUser){
+                                    maxMatchUser.set("matchPercent", maxMatch / userRounds * 20);
+                                    res.json({ result: maxMatchUser, error: null });
+                                },
+                                error: function(error){
+                                    console.log("Error: Finding matched max user", error);
+                                    res.json({ result: null, error: error})
+                                }
+                            });
+
+                        },
+                        error: function(error){
+                            console.log("Error: Finding matched feedback", error);
+                            res.json({ result: null, error: error})
+                        }
+                    });
+                }else{
+                    res.json({ result: [], error: null });
+                }
+
+            },
+            error: function(error){
+                console.log("Error: Getting user's feedback list", err);
+                res.json({ result: null, error: error})
+            }
+        });
+
+        // find other feedback that is similar to the user's feedback
+
+
+    });
 
 app.use('/api', router);
 

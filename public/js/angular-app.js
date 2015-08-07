@@ -139,6 +139,12 @@ app.controller('ApiCtrl', ['$scope', 'ApiService', 'AppState', function($scope, 
 
     }
 
+    $scope.createUser = function(){
+        var data = {
+            
+        }
+    }
+
 }]);
 
 app.controller('SearchCtrl', ['$scope', 'ApiService', 'AppState', '$timeout', '$location', function($scope, apiService, appState, $timeout, $location){
