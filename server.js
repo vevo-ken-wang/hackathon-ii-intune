@@ -29,7 +29,7 @@ router.route('/users')
 
         // check if current user already exists, if not then create it
         var memberQuery = new Parse.Query(Member);
-        memberQuery.equalTo("fbId", req.body.fbId);
+        memberQuery.equalTo("email", req.body.email);
 
         memberQuery.first({
             success: function(user){
